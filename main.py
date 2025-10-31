@@ -31,6 +31,12 @@ def callback_message(callback):
 def controller(message):
     match message.text.lower().split():
         case ['меню']   : menu(message) if sqlC.check_acces(message.chat.id) else 0
+        case ['menu']   : 
+            if sqlC.check_acces(message.chat.id):
+                markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+                markup.add(telebot.types.KeyboardButton('Меню'))
+                bot.send_message(message.chat.id, 'Вот твоя кнопка', reply_markup= markup)
+            else: bot.delete_message(message.chat.id, message.message_id)
         case _          : bot.delete_message(message.chat.id,message.message_id)
     
 def menu(message):
@@ -42,7 +48,7 @@ def menu(message):
     if message.chat.id == 943464965:
         rep_markup.add(telebot.types.InlineKeyboardButton('Предоставить доступ',callback_data= '6'))
     msg = bot.send_message(message.chat.id, 'Меню', reply_markup= rep_markup)
-    last_message[message.chat.id] = msg.message_id
+    last_message[message.chat.id] = msg.message_id   
     
 def add_bonus_write_info(message):
     msg_text = 'Укажите информацию из слака.'
@@ -67,8 +73,7 @@ def add_bonus(message):
                     date_start = dates[0]
                     date_end   = dates[1]
                 except:
-                    date_end = '0'+re.search(r'\d{1}.\d{2}.\d{4}',line)
-
+                    date_end = '0'+re.search(r'\d{1}.\d{2}.\d{4}',line)[0]
             case 3  :
                 max_win = line.split(': ')[-1:][0]
             case 4  :
@@ -81,16 +86,16 @@ def add_bonus(message):
                 provider = need_info[1][:-1]
             case 7 | 12 :
                 need_info = line.split(':  ')[-1:][0].split(', ')
-                price_RUB = need_info[0].replace(' ', '').replace('RUB', '')
-                price_KZT = need_info[1].replace(' ', '').replace('KZT', '')
-                price_UAH = need_info[2].replace(' ', '').replace('UAH', '')
+                price_RUB = need_info[0].replace(' ', '').replace('RUB', '').replace(',','.')
+                price_KZT = need_info[1].replace(' ', '').replace('KZT', '').replace(',','.')
+                price_UAH = need_info[2].replace(' ', '').replace('UAH', '').replace(',','.')
             case 8 | 13 :
                 need_info = line.split(': ')[1:]
                 count_spin = need_info[0][:2]
                 need_info = need_info[1].split(', ')
-                price_spin_RUB = need_info[0].replace(' ', '').replace('RUB', '')
-                price_spin_KZT = need_info[1].replace(' ', '').replace('KZT', '')
-                price_spin_UAH = need_info[2].replace(' ', '').replace('UAH', '')
+                price_spin_RUB = need_info[0].replace(' ', '').replace('RUB', '').replace(',','.')
+                price_spin_KZT = need_info[1].replace(' ', '').replace('KZT', '').replace(',','.')
+                price_spin_UAH = need_info[2].replace(' ', '').replace('UAH', '').replace(',','.')
             case 9 | 14 :
                 code_back = line.split(': ')[-1:][0]
                 msg_RUB = f'Вы можете воспользоваться промокодом {code} при внесении депозита от {price_RUB} рублей, вам будет доступно {count_spin} фриспинов по ставке {price_spin_RUB} рублей в игре {game} от провайдера {provider}. Максимальный выигрыш по промокоду {max_win}, вейджер составит x{wager}.'
@@ -110,6 +115,9 @@ def show_bonus_write_code(message):
 def show_bonus(message):
     code = message.text
     need_info = sqlC.get_bonus_info(code)
+    if need_info is None:
+        bot.send_message(message.chat.id, 'Не найден')
+        return 0
     msg_info = f'Проект: {need_info[0]}\nПериод активации: с {need_info[8]} по {need_info[9]}\nВ бэке: {need_info[10]}'
     bot.send_message(message.chat.id, msg_info)
     bot.send_message(message.chat.id, 'RUB')
